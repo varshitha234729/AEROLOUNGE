@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AeroLounge — Member Database</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #05090f; --surface: #0c1420; --border: rgba(0,220,180,0.15);
+    --accent: #00dcb4; --accent2: #0072ff; --danger: #ff4060;
+    --warn: #ffaa00; --text: #e8f0ff; --muted: #556070; --glass: rgba(12,20,32,0.85);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; overflow-x: hidden; }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: linear-gradient(rgba(0,220,180,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,220,180,0.03) 1px, transparent 1px);
+    background-size: 40px 40px; pointer-events: none; z-index: 0;
+  }
+  .orb { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; }
+  .orb-1 { width: 500px; height: 500px; background: rgba(0,114,255,0.1); top: -100px; right: -100px; }
+  .orb-2 { width: 350px; height: 350px; background: rgba(0,220,180,0.06); bottom: -80px; left: -80px; }
+  header {
+    position: relative; z-index: 10; display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 40px; border-bottom: 1px solid var(--border); backdrop-filter: blur(12px);
+  }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-icon { width: 36px; height: 36px; border: 2px solid var(--accent); border-radius: 8px; display: grid; place-items: center; }
+  .logo-text { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 3px; }
+  .logo-sub { font-size: 10px; letter-spacing: 2px; color: var(--accent); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; }
+  nav { display: flex; gap: 8px; }
+  .nav-btn {
+    padding: 8px 18px; border-radius: 6px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); font-family: 'DM Sans', sans-serif;
+    font-size: 13px; cursor: pointer; transition: all 0.2s; text-decoration: none; display: flex; align-items: center; gap: 6px;
+  }
+  .nav-btn:hover { color: var(--text); border-color: rgba(0,220,180,0.4); }
+  .nav-btn.active { color: var(--accent); border-color: var(--accent); background: rgba(0,220,180,0.07); }
+  .page { position: relative; z-index: 5; padding: 30px 40px; max-width: 1400px; margin: 0 auto; }
+  .page-title-section { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 28px; }
+  .page-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 48px; letter-spacing: 4px; line-height: 1;
+    background: linear-gradient(135deg, var(--text), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .page-sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .toolbar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
+  .search-wrap { position: relative; flex: 1; min-width: 240px; }
+  .search-wrap svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); }
+  .search-input {
+    width: 100%; padding: 10px 16px 10px 40px; background: var(--glass); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; backdrop-filter: blur(12px);
+  }
+  .search-input::placeholder { color: var(--muted); }
+  .search-input:focus { border-color: rgba(0,220,180,0.5); }
+  .filter-select {
+    padding: 10px 16px; background: var(--glass); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; outline: none; cursor: pointer; backdrop-filter: blur(12px);
+  }
+  .btn {
+    padding: 10px 22px; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 13px;
+    font-weight: 500; cursor: pointer; transition: all 0.2s; border: none; display: flex; align-items: center; gap: 8px;
+  }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover { background: #00f0c8; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,220,180,0.3); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn-outline:hover { border-color: rgba(0,220,180,0.5); color: var(--accent); }
+  .btn-sm { padding: 7px 14px; font-size: 12px; }
+  .stats-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: var(--glass); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; backdrop-filter: blur(12px); display: flex; align-items: center; gap: 16px; }
+  .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; }
+  .stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; line-height: 1; }
+  .stat-label { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+  .table-card { background: var(--glass); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; backdrop-filter: blur(12px); margin-bottom: 24px; }
+  .table-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid var(--border); }
+  .table-title { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { border-bottom: 1px solid var(--border); }
+  th { padding: 12px 20px; text-align: left; font-size: 10px; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); font-weight: 400; }
+  tbody tr { border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.15s; }
+  tbody tr:hover { background: rgba(255,255,255,0.025); }
+  tbody tr:last-child { border-bottom: none; }
+  td { padding: 12px 20px; font-size: 14px; vertical-align: middle; }
+  .member-cell { display: flex; align-items: center; gap: 12px; }
+  .avatar { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; border: 2px solid rgba(0,220,180,0.3); overflow: hidden; }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .member-name { font-weight: 500; }
+  .member-id { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--muted); margin-top: 2px; }
+  .tier-badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 100px; font-size: 10px; font-family: 'JetBrains Mono', monospace; font-weight: 700; letter-spacing: 1px; }
+  .tier-badge.platinum { background: rgba(200,200,255,0.1); color: #c8c8ff; border: 1px solid rgba(200,200,255,0.25); }
+  .tier-badge.gold { background: rgba(255,180,0,0.1); color: var(--warn); border: 1px solid rgba(255,180,0,0.25); }
+  .tier-badge.silver { background: rgba(150,170,190,0.1); color: #96aabc; border: 1px solid rgba(150,170,190,0.25); }
+  .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 100px; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+  .status-badge.active { background: rgba(0,220,180,0.1); color: var(--accent); border: 1px solid rgba(0,220,180,0.2); }
+  .status-badge.inactive { background: rgba(255,64,96,0.08); color: var(--danger); border: 1px solid rgba(255,64,96,0.2); }
+  .status-badge.pending { background: rgba(255,170,0,0.08); color: var(--warn); border: 1px solid rgba(255,170,0,0.2); }
+  .face-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .face-dot.enrolled { background: var(--accent); }
+  .face-dot.missing { background: var(--danger); }
+  .face-status { display: inline-flex; align-items: center; gap: 6px; }
+  .action-btns { display: flex; gap: 8px; }
+  .icon-btn { width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; display: grid; place-items: center; transition: all 0.15s; }
+  .icon-btn:hover { color: var(--accent); border-color: rgba(0,220,180,0.4); background: rgba(0,220,180,0.05); }
+  .icon-btn.danger:hover { color: var(--danger); border-color: rgba(255,64,96,0.4); background: rgba(255,64,96,0.05); }
+  .pagination { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-top: 1px solid var(--border); }
+  .page-info { font-size: 12px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+  /* MODALS */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(5,9,15,0.88); z-index: 100; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  .modal-overlay.show { opacity: 1; pointer-events: all; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 36px; width: 560px; max-height: 90vh; overflow-y: auto; transform: translateY(20px); transition: transform 0.3s; }
+  .modal-overlay.show .modal { transform: translateY(0); }
+  .modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 3px; margin-bottom: 24px; }
+  .form-group { margin-bottom: 18px; }
+  .form-label { display: block; font-size: 11px; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 8px; }
+  .form-input { width: 100%; padding: 11px 14px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; }
+  .form-input:focus { border-color: rgba(0,220,180,0.5); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .modal-actions { display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end; }
+
+  /* WEBCAM UI */
+  .webcam-box { background: rgba(0,0,0,0.35); border: 2px dashed var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 20px; text-align: center; transition: border-color 0.3s, background 0.3s; }
+  .webcam-box.live { border-color: var(--accent2); border-style: solid; }
+  .webcam-box.done { border-color: var(--accent); border-style: solid; background: rgba(0,220,180,0.04); }
+  .webcam-box.err  { border-color: var(--danger); border-style: solid; }
+  .cam-video { width: 100%; max-height: 220px; object-fit: cover; display: none; transform: scaleX(-1); }
+  .cam-canvas { display: none; }
+  .cam-preview { width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent); display: none; margin: 16px auto 8px; box-shadow: 0 0 20px rgba(0,220,180,0.3); }
+  .cam-placeholder { padding: 24px 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .cam-icon { font-size: 32px; }
+  .cam-controls { display: flex; gap: 8px; justify-content: center; margin-top: 10px; flex-wrap: wrap; padding: 0 16px 14px; }
+  .cam-status { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); margin: 4px 0 10px; padding: 0 16px; }
+  .cam-status.ok  { color: var(--accent); }
+  .cam-status.err { color: var(--danger); }
+
+  /* ERROR PANEL */
+  .cam-error-panel { display: none; padding: 16px 20px; }
+  .cam-error-panel.show { display: block; }
+  .cam-error-title { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--danger); letter-spacing: 1px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .cam-error-msg { font-size: 13px; color: var(--text); margin-bottom: 12px; line-height: 1.5; }
+  .cam-fix-steps { background: rgba(255,64,96,0.05); border: 1px solid rgba(255,64,96,0.15); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }
+  .cam-fix-steps p { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .cam-fix-steps ol { padding-left: 16px; }
+  .cam-fix-steps li { font-size: 12px; color: var(--text); line-height: 1.8; }
+  .cam-fix-steps li strong { color: var(--accent); }
+  .cam-upload-fallback { border-top: 1px solid rgba(255,255,255,0.05); padding-top: 14px; margin-top: 4px; }
+  .cam-upload-label { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; background: transparent; color: var(--text); border: 1px solid var(--border); transition: all 0.2s; }
+  .cam-upload-label:hover { border-color: rgba(0,220,180,0.5); color: var(--accent); }
+  .cam-upload-input { display: none; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 30px; right: 30px; background: var(--surface); border: 1px solid var(--accent); border-radius: 10px; padding: 14px 20px; display: flex; align-items: center; gap: 12px; z-index: 200; transform: translateY(80px); opacity: 0; transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); font-size: 13px; box-shadow: 0 8px 40px rgba(0,220,180,0.2); max-width: 380px; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.error { border-color: var(--danger); }
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00dcb4" stroke-width="1.8">
+        <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/>
+        <circle cx="12" cy="10" r="3"/>
+        <path d="M7 20.7A7 7 0 0117 20.7"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-text">AEROLOUNGE</div>
+      <div class="logo-sub">Biometric Entry System</div>
+    </div>
+  </div>
+  <nav>
+    <a href="live.html" class="nav-btn">Live Entry</a>
+    <a href="member.html" class="nav-btn active">Database</a>
+  </nav>
+  <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);">
+    MEMBERS: <span style="color:var(--accent);" id="db-count">0</span>
+  </div>
+</header>
+
+<div class="page">
+  <div class="page-title-section">
+    <div>
+      <div class="page-title">MEMBER DATABASE</div>
+      <div class="page-sub">Register members and enroll their face for biometric recognition at the gate</div>
+    </div>
+    <button class="btn btn-primary" onclick="openRegisterModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      REGISTER MEMBER
+    </button>
+  </div>
+
+  <div class="stats-strip">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(0,220,180,0.1);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+      <div><div class="stat-num" style="color:var(--accent);" id="s-total">0</div><div class="stat-label">Total Members</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(0,114,255,0.1);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="1.8"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/><circle cx="12" cy="10" r="3"/><path d="M7 20.7A7 7 0 0117 20.7"/></svg></div>
+      <div><div class="stat-num" style="color:var(--accent2);" id="s-enrolled">0</div><div class="stat-label">Face Enrolled</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(255,180,0,0.08);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+      <div><div class="stat-num" style="color:var(--warn);" id="s-platinum">0</div><div class="stat-label">Platinum Tier</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(255,64,96,0.08);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+      <div><div class="stat-num" style="color:var(--danger);" id="s-missing">0</div><div class="stat-label">Missing Face</div></div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="search-input" type="text" placeholder="Search by name, ID..." id="search-input" oninput="filterMembers()"/>
+    </div>
+    <select class="filter-select" id="tier-filter" onchange="filterMembers()">
+      <option value="">All Tiers</option>
+      <option value="platinum">Platinum</option>
+      <option value="gold">Gold</option>
+      <option value="silver">Silver</option>
+    </select>
+    <button class="btn btn-outline" onclick="exportCSV()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      EXPORT CSV
+    </button>
+  </div>
+
+  <div class="table-card">
+    <div class="table-header">
+      <span class="table-title">// MEMBER REGISTRY — <span id="count-display">0</span> RECORDS</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent);">✓ FACES STORED IN BROWSER — SHARED WITH LIVE ENTRY</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>MEMBER</th>
+          <th>TIER</th>
+          <th>STATUS</th>
+          <th>LOUNGE</th>
+          <th>FACE DATA</th>
+          <th>REGISTERED</th>
+          <th>EXPIRES</th>
+          <th>ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody id="member-tbody"></tbody>
+    </table>
+    <div class="pagination">
+      <span class="page-info"><span id="page-info">0</span> members</span>
+      <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;">Faces shared with Live Entry page via browser storage</span>
+    </div>
+  </div>
+</div>
+
+<!-- REGISTER MODAL -->
+<div class="modal-overlay" id="register-overlay">
+  <div class="modal">
+    <div class="modal-title">REGISTER NEW MEMBER</div>
+
+    <div class="webcam-box" id="reg-box">
+      <!-- Step 1: Idle placeholder -->
+      <div class="cam-placeholder" id="reg-placeholder">
+        <div class="cam-icon">📷</div>
+        <div style="font-size:13px;font-weight:500;">Capture Member's Face</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">Required for biometric recognition at the entry gate</div>
+        <div class="cam-controls">
+          <button class="btn btn-primary btn-sm" onclick="regCamStart()">START WEBCAM</button>
+          <button class="btn btn-outline btn-sm" onclick="regTriggerUpload()">📁 UPLOAD PHOTO</button>
+        </div>
+        <div style="font-size:10px;color:rgba(85,96,112,0.45);font-family:'JetBrains Mono',monospace;margin-top:4px;">Needs HTTPS or localhost — <span style="color:var(--warn);cursor:pointer;" onclick="showCamHelp()">why?</span></div>
+      </div>
+
+      <!-- Step 2: Live video -->
+      <video class="cam-video" id="enroll-vid" autoplay playsinline muted></video>
+      <canvas class="cam-canvas" id="reg-cvs"></canvas>
+      <div class="cam-controls" id="reg-capture-ctrls" style="display:none;">
+        <button class="btn btn-primary btn-sm" onclick="regCapture()">📸 CAPTURE FACE</button>
+        <button class="btn btn-outline btn-sm" onclick="regCamStop()">✕ CANCEL</button>
+      </div>
+
+      <!-- Step 3: Preview after capture -->
+      <img class="cam-preview" id="reg-prev" alt="face"/>
+      <div class="cam-controls" id="reg-retake-ctrls" style="display:none;">
+        <button class="btn btn-outline btn-sm" onclick="regRetake()">↺ RETAKE</button>
+        <button class="btn btn-outline btn-sm" onclick="regTriggerUpload()">📁 UPLOAD INSTEAD</button>
+      </div>
+
+      <!-- Error panel -->
+      <div class="cam-error-panel" id="reg-error-panel">
+        <div class="cam-error-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="reg-error-code">CAMERA ERROR</span>
+        </div>
+        <div class="cam-error-msg" id="reg-error-msg">Could not access camera.</div>
+        <div class="cam-fix-steps" id="reg-fix-steps">
+          <p>How to fix:</p>
+          <ol id="reg-fix-list"></ol>
+        </div>
+        <div class="cam-upload-fallback">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;font-family:'JetBrains Mono',monospace;">— OR USE A PHOTO INSTEAD —</div>
+          <label class="cam-upload-label" onclick="regTriggerUpload()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            UPLOAD FACE PHOTO
+          </label>
+          <div style="font-size:11px;color:var(--muted);margin-top:8px;">JPG or PNG, clear frontal face photo</div>
+        </div>
+      </div>
+
+      <!-- Hidden file input -->
+      <input type="file" id="reg-file-input" class="cam-upload-input" accept="image/*" onchange="regHandleUpload(event)"/>
+      <div class="cam-status" id="reg-status"></div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">First Name</label><input class="form-input" id="f-first" placeholder="Arjun"/></div>
+      <div class="form-group"><label class="form-label">Last Name</label><input class="form-input" id="f-last" placeholder="Mehta"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Membership Tier</label>
+        <select class="form-input" id="f-tier"><option value="platinum">Platinum</option><option value="gold">Gold</option><option value="silver">Silver</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Lounge Access</label>
+        <select class="form-input" id="f-lounge"><option>Gate 7B</option><option>Gate 3A</option><option>Gate 12C</option><option>All Lounges</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="f-email" placeholder="member@email.com"/></div>
+      <div class="form-group"><label class="form-label">Expiry Date</label><input class="form-input" type="date" id="f-expiry"/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeRegModal()">CANCEL</button>
+      <button class="btn btn-primary" onclick="registerMember()">ENROLL MEMBER</button>
+    </div>
+  </div>
+</div>
+
+<!-- ENROLL FACE MODAL -->
+<div class="modal-overlay" id="enroll-overlay">
+  <div class="modal" style="width:460px;">
+    <div class="modal-title">ENROLL FACE DATA</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Enrolling face for: <span style="color:var(--text);font-weight:600;" id="enroll-name-label">—</span></div>
+
+    <div class="webcam-box" id="enroll-box">
+      <div class="cam-placeholder" id="enroll-placeholder">
+        <div class="cam-icon">📷</div>
+        <div style="font-size:13px;font-weight:500;">Position face in frame and capture</div>
+        <div class="cam-controls">
+          <button class="btn btn-primary btn-sm" onclick="enrollCamStart()">START WEBCAM</button>
+          <button class="btn btn-outline btn-sm" onclick="enrollTriggerUpload()">📁 UPLOAD PHOTO</button>
+        </div>
+      </div>
+      <video class="cam-video" id="enroll-vid"></video>
+      <canvas class="cam-canvas" id="enroll-cvs"></canvas>
+      <img class="cam-preview" id="enroll-prev" alt="enrolled face"/>
+      <div class="cam-controls" id="enroll-capture-ctrls" style="display:none;">
+        <button class="btn btn-primary btn-sm" onclick="enrollCapture()">📸 CAPTURE</button>
+        <button class="btn btn-outline btn-sm" onclick="enrollCamStop()">✕ CANCEL</button>
+      </div>
+      <div class="cam-controls" id="enroll-retake-ctrls" style="display:none;">
+        <button class="btn btn-outline btn-sm" onclick="enrollRetake()">↺ RETAKE</button>
+        <button class="btn btn-outline btn-sm" onclick="enrollTriggerUpload()">📁 UPLOAD INSTEAD</button>
+      </div>
+
+      <!-- Error panel -->
+      <div class="cam-error-panel" id="enroll-error-panel">
+        <div class="cam-error-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="enroll-error-code">CAMERA ERROR</span>
+        </div>
+        <div class="cam-error-msg" id="enroll-error-msg">Could not access camera.</div>
+        <div class="cam-fix-steps">
+          <p>How to fix:</p>
+          <ol id="enroll-fix-list"></ol>
+        </div>
+        <div class="cam-upload-fallback">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;font-family:'JetBrains Mono',monospace;">— OR USE A PHOTO INSTEAD —</div>
+          <label class="cam-upload-label" onclick="enrollTriggerUpload()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            UPLOAD FACE PHOTO
+          </label>
+        </div>
+      </div>
+
+      <input type="file" id="enroll-file-input" class="cam-upload-input" accept="image/*" onchange="enrollHandleUpload(event)"/>
+      <div class="cam-status" id="enroll-status"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeEnrollModal()">CANCEL</button>
+      <button class="btn btn-primary" id="save-enroll-btn" disabled onclick="saveEnrolledFace()">SAVE FACE DATA</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"><span id="toast-icon" style="color:var(--accent);">✓</span><span id="toast-msg">Done.</span></div>
+
+<script>
+// ========================
+// STORAGE
+// ========================
+const DB_KEY    = 'aerolounge_members';
+const FACES_KEY = 'aerolounge_faces';
+
+function loadMembers() { try { return JSON.parse(localStorage.getItem(DB_KEY)) || []; } catch { return []; } }
+function saveMembers(d) { localStorage.setItem(DB_KEY, JSON.stringify(d)); }
+function loadFaces()   { try { return JSON.parse(localStorage.getItem(FACES_KEY)) || {}; } catch { return {}; } }
+function saveFaces(d)  { localStorage.setItem(FACES_KEY, JSON.stringify(d)); }
+
+// Seed demo members on first load
+if (!localStorage.getItem(DB_KEY)) {
+  saveMembers([
+    { id:'PM001', name:'Arjun Mehta',   tier:'platinum', lounge:'Gate 7B',      status:'active', registered:'27 Feb 2026', expires:'Dec 2026' },
+    { id:'PM002', name:'Priya Sharma',  tier:'gold',     lounge:'Gate 3A',      status:'active', registered:'20 Jan 2026', expires:'Mar 2026' },
+    { id:'PM003', name:'Vikram Kapoor', tier:'platinum', lounge:'All Lounges',  status:'active', registered:'15 Dec 2025', expires:'Aug 2027' },
+  ]);
+}
+
+let members = loadMembers();
+let faces   = loadFaces();
+
+// ========================
+// TABLE
+// ========================
+function renderTable(data) {
+  const tbody = document.getElementById('member-tbody');
+  document.getElementById('count-display').textContent = data.length;
+  document.getElementById('page-info').textContent = data.length;
+  document.getElementById('db-count').textContent = members.length;
+
+  const enrolled  = members.filter(m => !!faces[m.id]).length;
+  const platinum  = members.filter(m => m.tier === 'platinum').length;
+  document.getElementById('s-total').textContent    = members.length;
+  document.getElementById('s-enrolled').textContent = enrolled;
+  document.getElementById('s-platinum').textContent = platinum;
+  document.getElementById('s-missing').textContent  = members.length - enrolled;
+
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:12px;">NO MEMBERS FOUND — ADD ONE ABOVE</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(m => {
+    const hasFace = !!faces[m.id];
+    const tc = m.tier==='platinum'?'200,200,255':m.tier==='gold'?'255,180,0':'150,170,190';
+    const avatar = hasFace
+      ? `<img src="${faces[m.id]}" style="width:100%;height:100%;object-fit:cover;" />`
+      : '👤';
+    return `<tr>
+      <td><div class="member-cell">
+        <div class="avatar" style="background:rgba(${tc},0.1);">${avatar}</div>
+        <div><div class="member-name">${m.name}</div><div class="member-id">${m.id}</div></div>
+      </div></td>
+      <td><span class="tier-badge ${m.tier}">${m.tier.toUpperCase()}</span></td>
+      <td><span class="status-badge ${m.status}"><span class="face-dot ${m.status==='active'?'enrolled':'missing'}"></span>${m.status.toUpperCase()}</span></td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:12px;">${m.lounge}</td>
+      <td><span class="face-status">
+        <span class="face-dot ${hasFace?'enrolled':'missing'}"></span>
+        <span style="color:${hasFace?'var(--accent)':'var(--danger)'};font-family:'JetBrains Mono',monospace;font-size:11px;">${hasFace?'ENROLLED':'MISSING'}</span>
+      </span></td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);">${m.registered}</td>
+      <td style="font-size:13px;">${m.expires}</td>
+      <td><div class="action-btns">
+        <button class="icon-btn" title="${hasFace?'Re-enroll face':'Enroll face'}" onclick="openEnrollModal('${m.id}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${hasFace?'var(--accent)':'currentColor'}" stroke-width="2"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/><circle cx="12" cy="10" r="3"/><path d="M7 20.7A7 7 0 0117 20.7"/></svg>
+        </button>
+        <button class="icon-btn danger" title="Remove" onclick="removeMember('${m.id}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+        </button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterMembers() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const t = document.getElementById('tier-filter').value;
+  renderTable(members.filter(m =>
+    (!q || m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q)) &&
+    (!t || m.tier === t)
+  ));
+}
+
+function removeMember(id) {
+  const m = members.find(x=>x.id===id);
+  if (!m || !confirm(`Remove ${m.name}? Their face data will be deleted too.`)) return;
+  members = members.filter(x=>x.id!==id);
+  faces = loadFaces(); delete faces[id];
+  saveMembers(members); saveFaces(faces);
+  filterMembers(); showToast(`${m.name} removed.`);
+}
+
+// ========================
+// SMART CAMERA ERROR DIAGNOSIS
+// Detects the exact reason camera failed and shows specific fix steps
+// ========================
+function diagnoseCamError(err, prefix) {
+  const proto = location.protocol;
+  const host  = location.hostname;
+  const isFile      = proto === 'file:';
+  const isInsecHttp = proto === 'http:' && host !== 'localhost' && host !== '127.0.0.1';
+
+  let code, msg, steps;
+
+  if (isFile || err.name === 'file_protocol') {
+    code  = '🚫 FILE:// PROTOCOL — CAMERA BLOCKED';
+    msg   = 'You opened this file directly from your computer (file://). Browsers always block camera access on file:// URLs for security. This is NOT a bug — it\'s a browser rule.';
+    steps = [
+      'Open a <strong>Terminal</strong> (Mac/Linux) or <strong>Command Prompt</strong> (Windows)',
+      'Navigate to the folder containing these HTML files: <strong>cd path/to/folder</strong>',
+      'Start a local server — Python 3: <strong>python -m http.server 8080</strong>',
+      'Then open your browser and go to <strong>http://localhost:8080/member-management.html</strong>',
+      'Camera will work immediately ✓ &nbsp; (localhost is always trusted by browsers)',
+    ];
+  } else if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+    code  = '🔒 CAMERA PERMISSION DENIED';
+    msg   = 'Camera access was blocked. Either you clicked "Block" when the browser asked, or a previous block was remembered.';
+    steps = [
+      'Look for a <strong>camera icon 🎥</strong> or <strong>lock icon 🔒</strong> in the browser address bar — click it',
+      'Change Camera permission from <strong>Block → Allow</strong>',
+      'Click <strong>Reload / Refresh</strong> this page',
+      'Then click <strong>START WEBCAM</strong> again — the browser will ask for permission, click Allow',
+    ];
+  } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+    code  = '📷 NO CAMERA DEVICE FOUND';
+    msg   = 'Your computer has no webcam, or it\'s not being detected. Use the photo upload option below.';
+    steps = [
+      'Check that a webcam is physically plugged in or your laptop lid is open',
+      'Open your system settings and confirm the camera appears in device list',
+      'Ensure no other app (Zoom, Teams, OBS) has the camera locked',
+      'Or simply <strong>upload a face photo</strong> using the button below ↓',
+    ];
+  } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+    code  = '⚡ CAMERA BUSY — IN USE BY ANOTHER APP';
+    msg   = 'Your camera is currently being used by another application (Zoom, Teams, Google Meet, OBS, etc.) and can\'t be shared.';
+    steps = [
+      'Close or minimise any <strong>video call apps</strong> (Zoom, Teams, Meet, etc.)',
+      'Check the taskbar / dock for apps running in the background with camera access',
+      'Try again after closing those apps',
+      'Or <strong>upload a face photo</strong> instead using the button below ↓',
+    ];
+  } else if (isInsecHttp) {
+    code  = '🌐 INSECURE HTTP — CAMERA REQUIRES HTTPS';
+    msg   = 'This page is loaded over plain HTTP. Browsers only allow camera access on HTTPS or localhost.';
+    steps = [
+      'Access this app via <strong>https://</strong> if your server supports it',
+      'Or run locally: <strong>python -m http.server 8080</strong> then open <strong>http://localhost:8080</strong>',
+      'Or <strong>upload a face photo</strong> using the button below ↓',
+    ];
+  } else {
+    code  = `⚠️ UNEXPECTED ERROR: ${err.name || 'UNKNOWN'}`;
+    msg   = `Something went wrong: "${err.message || err}". Try the steps below.`;
+    steps = [
+      'Reload the page and try again',
+      'Try a different browser — <strong>Chrome</strong> or <strong>Firefox</strong> work best',
+      'Check that no other tab has the camera in use',
+      'Or <strong>upload a face photo</strong> using the button below ↓',
+    ];
+  }
+
+  document.getElementById(`${prefix}-error-code`).textContent = code;
+  document.getElementById(`${prefix}-error-msg`).textContent  = msg;
+  document.getElementById(`${prefix}-fix-list`).innerHTML = steps.map(s => `<li>${s}</li>`).join('');
+  document.getElementById(`${prefix}-error-panel`).classList.add('show');
+}
+
+function showCamHelp() {
+  document.getElementById('reg-placeholder').style.display = 'none';
+  document.getElementById('reg-box').className = 'webcam-box err';
+  diagnoseCamError({ name: 'file_protocol' }, 'reg');
+}
+
+// ========================
+// REGISTER MODAL — WEBCAM
+// ========================
+let regStream = null, regData = null;
+
+function openRegisterModal() {
+  regData = null;
+  document.getElementById('f-expiry').min = new Date().toISOString().split('T')[0];
+  resetWebcamUI('reg');
+  document.getElementById('register-overlay').classList.add('show');
+  document.getElementById('register-overlay').onclick = e => { if(e.target===document.getElementById('register-overlay')) closeRegModal(); };
+}
+
+function closeRegModal() {
+  regCamStop(); resetWebcamUI('reg');
+  document.getElementById('register-overlay').classList.remove('show');
+  ['f-first','f-last','f-email'].forEach(id => document.getElementById(id).value = '');
+}
+
+async function regCamStart() {
+  // Pre-flight: detect file:// before even calling getUserMedia (it would throw cryptically)
+  if (location.protocol === 'file:') {
+    document.getElementById('reg-placeholder').style.display = 'none';
+    document.getElementById('reg-box').className = 'webcam-box err';
+    diagnoseCamError({ name: 'file_protocol' }, 'reg');
+    return;
+  }
+  setStatus('reg', 'Requesting camera access...', '');
+  try {
+    regStream = await navigator.mediaDevices.getUserMedia({ video: { width:640, height:480, facingMode:'user' } });
+    const v = document.getElementById('reg-vid');
+    if (!v) { console.error('reg-vid not found'); return; }
+    v.style.display = 'block';
+    v.srcObject = regStream;
+    document.getElementById('reg-placeholder').style.display = 'none';
+    document.getElementById('reg-error-panel').classList.remove('show');
+    document.getElementById('reg-capture-ctrls').style.display = 'flex';
+    document.getElementById('reg-box').className = 'webcam-box live';
+    setStatus('reg', '🟢 Camera active — align face in frame and press CAPTURE', 'ok');
+  } catch(e) {
+    document.getElementById('reg-placeholder').style.display = 'none';
+    document.getElementById('reg-box').className = 'webcam-box err';
+    diagnoseCamError(e, 'reg');
+    setStatus('reg', '', '');
+  }
+}
+
+function regCamStop() {
+  if(regStream){ regStream.getTracks().forEach(t=>t.stop()); regStream = null; }
+}
+
+function regCapture() {
+  const v = document.getElementById('reg-vid');
+  const c = document.getElementById('reg-cvs');
+  c.width = v.videoWidth||320; c.height = v.videoHeight||240;
+  const ctx = c.getContext('2d');
+  ctx.translate(c.width,0); ctx.scale(-1,1);
+  ctx.drawImage(v,0,0,c.width,c.height);
+  regData = c.toDataURL('image/jpeg',0.88);
+  showRegPreview(regData);
+  regCamStop();
+}
+
+function regRetake() {
+  document.getElementById('reg-prev').style.display = 'none';
+  document.getElementById('reg-retake-ctrls').style.display = 'none';
+  document.getElementById('reg-error-panel').classList.remove('show');
+  document.getElementById('reg-placeholder').style.display = 'flex';
+  document.getElementById('reg-box').className = 'webcam-box';
+  setStatus('reg','','');
+  regData = null;
+}
+
+function regTriggerUpload() {
+  document.getElementById('reg-file-input').click();
+}
+
+function regHandleUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { regData = e.target.result; showRegPreview(regData); };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function showRegPreview(dataURL) {
+  const p = document.getElementById('reg-prev');
+  p.src = dataURL; p.style.display = 'block';
+  document.getElementById('reg-vid').style.display = 'none';
+  document.getElementById('reg-capture-ctrls').style.display = 'none';
+  document.getElementById('reg-retake-ctrls').style.display = 'flex';
+  document.getElementById('reg-error-panel').classList.remove('show');
+  document.getElementById('reg-placeholder').style.display = 'none';
+  document.getElementById('reg-box').className = 'webcam-box done';
+  setStatus('reg', '✓ Face image ready — fill in details below and click ENROLL MEMBER', 'ok');
+}
+
+function registerMember() {
+  const first = document.getElementById('f-first').value.trim();
+  const last  = document.getElementById('f-last').value.trim();
+  if (!first || !last) { showToast('Please enter member name.', 'err'); return; }
+  const tier   = document.getElementById('f-tier').value;
+  const lounge = document.getElementById('f-lounge').value;
+  const expVal = document.getElementById('f-expiry').value;
+  const expires = expVal ? new Date(expVal).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : 'Dec 2027';
+  const today   = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  const id = 'PM' + String(Date.now()).slice(-4);
+  members.unshift({ id, name:`${first} ${last}`, tier, lounge, status:'active', registered:today, expires });
+  saveMembers(members);
+  if (regData) { faces = loadFaces(); faces[id] = regData; saveFaces(faces); }
+  closeRegModal(); filterMembers();
+  showToast(regData ? `${first} ${last} enrolled with face data ✓` : `${first} ${last} registered — enroll face via the 👤 icon.`);
+}
+
+// ========================
+// ENROLL FACE MODAL (for existing members missing face data)
+// ========================
+let enrollStream = null, enrollData = null, enrollMemberId = null;
+
+function openEnrollModal(id) {
+  enrollMemberId = id; enrollData = null;
+  const m = members.find(x=>x.id===id);
+  document.getElementById('enroll-name-label').textContent = `${m.name} (${m.id})`;
+  document.getElementById('save-enroll-btn').disabled = true;
+  resetWebcamUI('enroll');
+  document.getElementById('enroll-overlay').classList.add('show');
+  document.getElementById('enroll-overlay').onclick = e => { if(e.target===document.getElementById('enroll-overlay')) closeEnrollModal(); };
+}
+
+function closeEnrollModal() {
+  enrollCamStop(); resetWebcamUI('enroll');
+  document.getElementById('enroll-overlay').classList.remove('show');
+}
+
+async function enrollCamStart() {
+  if (location.protocol === 'file:') {
+    document.getElementById('enroll-placeholder').style.display = 'none';
+    document.getElementById('enroll-box').className = 'webcam-box err';
+    diagnoseCamError({ name: 'file_protocol' }, 'enroll');
+    return;
+  }
+  setStatus('enroll', 'Requesting camera access...', '');
+  try {
+    enrollStream = await navigator.mediaDevices.getUserMedia({ video:{ width:640, height:480, facingMode:'user' } });
+    const v = document.getElementById('enroll-vid');
+    if (!v) { console.error('enroll-vid not found'); return; }
+    v.style.display = 'block';
+    v.srcObject = enrollStream;
+    document.getElementById('enroll-placeholder').style.display = 'none';
+    document.getElementById('enroll-error-panel').classList.remove('show');
+    document.getElementById('enroll-capture-ctrls').style.display = 'flex';
+    document.getElementById('enroll-box').className = 'webcam-box live';
+    setStatus('enroll', '🟢 Camera active — position face and press CAPTURE', 'ok');
+  } catch(e) {
+    document.getElementById('enroll-placeholder').style.display = 'none';
+    document.getElementById('enroll-box').className = 'webcam-box err';
+    diagnoseCamError(e, 'enroll');
+    setStatus('enroll','','');
+  }
+}
+
+function enrollCamStop() {
+  if(enrollStream){ enrollStream.getTracks().forEach(t=>t.stop()); enrollStream = null; }
+}
+
+function enrollCapture() {
+  const v = document.getElementById('enroll-vid');
+  const c = document.getElementById('enroll-cvs');
+  c.width = v.videoWidth||320; c.height = v.videoHeight||240;
+  const ctx = c.getContext('2d');
+  ctx.translate(c.width,0); ctx.scale(-1,1);
+  ctx.drawImage(v,0,0,c.width,c.height);
+  enrollData = c.toDataURL('image/jpeg',0.88);
+  showEnrollPreview(enrollData);
+  enrollCamStop();
+}
+
+function enrollRetake() {
+  document.getElementById('enroll-prev').style.display = 'none';
+  document.getElementById('enroll-retake-ctrls').style.display = 'none';
+  document.getElementById('enroll-error-panel').classList.remove('show');
+  document.getElementById('enroll-placeholder').style.display = 'flex';
+  document.getElementById('enroll-box').className = 'webcam-box';
+  document.getElementById('save-enroll-btn').disabled = true;
+  setStatus('enroll','','');
+  enrollData = null;
+}
+
+function enrollTriggerUpload() {
+  document.getElementById('enroll-file-input').click();
+}
+
+function enrollHandleUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { enrollData = e.target.result; showEnrollPreview(enrollData); };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function showEnrollPreview(dataURL) {
+  const p = document.getElementById('enroll-prev');
+  p.src = dataURL; p.style.display = 'block';
+  document.getElementById('enroll-vid').style.display = 'none';
+  document.getElementById('enroll-capture-ctrls').style.display = 'none';
+  document.getElementById('enroll-retake-ctrls').style.display = 'flex';
+  document.getElementById('enroll-error-panel').classList.remove('show');
+  document.getElementById('enroll-placeholder').style.display = 'none';
+  document.getElementById('enroll-box').className = 'webcam-box done';
+  document.getElementById('save-enroll-btn').disabled = false;
+  setStatus('enroll', '✓ Face image ready — click SAVE FACE DATA', 'ok');
+}
+
+function saveEnrolledFace() {
+  if (!enrollData || !enrollMemberId) return;
+  faces = loadFaces(); faces[enrollMemberId] = enrollData; saveFaces(faces);
+  const m = members.find(x=>x.id===enrollMemberId);
+  closeEnrollModal(); filterMembers();
+  showToast(`Face saved for ${m?m.name:enrollMemberId} — they can now scan at the entry gate ✓`);
+}
+
+// ========================
+// HELPERS
+// ========================
+function resetWebcamUI(prefix) {
+  ['vid','prev'].forEach(k => { const el=document.getElementById(`${prefix}-${k}`); if(el) el.style.display='none'; });
+  ['capture-ctrls','retake-ctrls'].forEach(k => { const el=document.getElementById(`${prefix}-${k}`); if(el) el.style.display='none'; });
+  const errPanel = document.getElementById(`${prefix}-error-panel`); if(errPanel) errPanel.classList.remove('show');
+  const ph = document.getElementById(`${prefix}-placeholder`); if(ph) ph.style.display='flex';
+  const box = document.getElementById(`${prefix}-box`); if(box) box.className='webcam-box';
+  setStatus(prefix,'','');
+}
+
+function setStatus(prefix, msg, type) {
+  const el = document.getElementById(`${prefix}-status`);
+  if(!el) return;
+  el.textContent = msg;
+  el.className = 'cam-status' + (type?' '+type:'');
+}
+
+function exportCSV() {
+  const rows=[['ID','Name','Tier','Status','Lounge','FaceEnrolled','Registered','Expires']];
+  members.forEach(m=>rows.push([m.id,m.name,m.tier,m.status,m.lounge,faces[m.id]?'Yes':'No',m.registered,m.expires]));
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.map(r=>r.join(',')).join('\n'));
+  a.download='aerolounge_members.csv'; a.click();
+  showToast('CSV exported.');
+}
+
+function showToast(msg, type='ok') {
+  const t=document.getElementById('toast');
+  const icon=document.getElementById('toast-icon');
+  document.getElementById('toast-msg').textContent=msg;
+  icon.textContent=type==='err'?'✗':'✓';
+  icon.style.color=type==='err'?'var(--danger)':'var(--accent)';
+  t.className='toast show'+(type==='err'?' error':'');
+  setTimeout(()=>t.classList.remove('show'),4000);
+}
+
+filterMembers();
+</script>
+</body>
+</html>
